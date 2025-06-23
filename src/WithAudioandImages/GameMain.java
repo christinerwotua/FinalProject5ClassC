@@ -33,8 +33,14 @@ public class GameMain extends JPanel {
     /**
      * Constructor to setup the UI and game components
      */
+    // 🔇 Variabel untuk tombol mute
+    private JToggleButton muteButton;
+    private boolean isMuted = false;
+
     public GameMain() {
-        BackgroundMusic.playLoop("/audio/funk-244706.wav");
+        if (!isMuted) {
+            BackgroundMusic.playLoop("/audio/funk-244706.wav");
+        }
 
         // Menambahkan input mode permainan (Player vs Player atau Player vs Bot)
         Object[] options = {"Player vs Player", "Player vs Bot"};
@@ -107,8 +113,53 @@ public class GameMain extends JPanel {
         statusBar.setHorizontalAlignment(JLabel.LEFT);
         statusBar.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 12));
 
+        // Tombol Mute/Unmute
+        muteButton = new JToggleButton("Mute");
+        muteButton.setPreferredSize(new Dimension(40, 20));        muteButton.setFocusPainted(false);
+        muteButton.setBackground(Color.LIGHT_GRAY);
+        muteButton.setFont(new Font("Arial", Font.BOLD, 12));
+
+        // Set ikon awal (unmute)
+        ImageIcon unmuteIcon = new ImageIcon(getClass().getResource("/icons/unmute.png"));
+        Image unmuteImg = unmuteIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+        muteButton.setIcon(new ImageIcon(unmuteImg));
+
+        // Aksi toggle
+        muteButton.addActionListener(e -> {
+            if (muteButton.isSelected()) {
+                BackgroundMusic.stop();
+
+                ImageIcon muteIcon = new ImageIcon(getClass().getResource("/icons/mute.png"));
+                Image muteImg = muteIcon.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+                muteButton.setIcon(new ImageIcon(muteImg));
+
+                isMuted = true;
+            } else {
+                BackgroundMusic.playLoop("/audio/funk-244706.wav");
+
+                ImageIcon unmuteIcon2 = new ImageIcon(getClass().getResource("/icons/unmute.png"));
+                Image unmuteImg2 = unmuteIcon2.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
+                muteButton.setIcon(new ImageIcon(unmuteImg2));
+
+                isMuted = false;
+            }
+        });
+
+
+
         super.setLayout(new BorderLayout());
-        super.add(statusBar, BorderLayout.PAGE_END); // same as SOUTH
+// Gabungkan status bar dan tombol mute di panel bawah
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(statusBar, BorderLayout.CENTER);
+
+        JPanel mutePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        mutePanel.setBackground(COLOR_BG_STATUS);
+        mutePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        mutePanel.add(muteButton);
+        bottomPanel.add(mutePanel, BorderLayout.EAST);
+
+        super.add(bottomPanel, BorderLayout.PAGE_END);
+
         super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 30));
         super.setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 2, false));
 
