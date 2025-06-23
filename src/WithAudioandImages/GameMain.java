@@ -31,6 +31,7 @@ public class GameMain extends JPanel {
      * Constructor to setup the UI and game components
      */
     public GameMain() {
+        BackgroundMusic.playLoop("/audio/funk-244706.wav");
 
         // Menambahkan input mode permainan (Player vs Player atau Player vs Bot)
         Object[] options = {"Player vs Player", "Player vs Bot"};
