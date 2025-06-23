@@ -3,12 +3,13 @@ package WithAudioandImages;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+
 /**
  * Tic-Tac-Toe: Two-player Graphic version with better OO design.
  * The Board and Cell classes are separated in their own classes.
  */
 public class GameMain extends JPanel {
-    private static final long serialVersionUID = 1L; // to prevent serializable warning
+    private static final long serialVersionUID = 1L;
 
     // Define named constants for the drawing graphics
     public static final String TITLE = "Tic Tac Toe";
@@ -39,7 +40,6 @@ public class GameMain extends JPanel {
                 JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
         isBotMode = (modeChoice == 1); // Jika memilih "Player vs Bot"
 
-// This JPanel fires MouseEvent
         super.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {  // mouse-clicked handler
@@ -56,6 +56,20 @@ public class GameMain extends JPanel {
                         currentState = board.stepGame(currentPlayer, row, col);
                         // Switch player
                         currentPlayer = (currentPlayer == Seed.CROSS) ? Seed.NOUGHT : Seed.CROSS;
+
+                        // Jika mode bot, jalankan langkah bot setelah pemain
+                        if (isBotMode && currentState == State.PLAYING) {
+                            // Mendapatkan langkah bot secara acak
+                            int[] botMove = Bot.getMove(board);
+                            if (botMove != null) {
+                                int botRow = botMove[0];
+                                int botCol = botMove[1];
+                                // Update game state setelah langkah bot
+                                currentState = board.stepGame(currentPlayer, botRow, botCol);
+                                // Ganti giliran pemain setelah langkah bot
+                                currentPlayer = (currentPlayer == Seed.CROSS) ? Seed.NOUGHT : Seed.CROSS;
+                            }
+                        }
                     }
                     // Play appropriate sound clip
                     if (currentState == State.PLAYING) {
@@ -85,7 +99,6 @@ public class GameMain extends JPanel {
         super.setLayout(new BorderLayout());
         super.add(statusBar, BorderLayout.PAGE_END); // same as SOUTH
         super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 30));
-        // account for statusBar in height
         super.setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 2, false));
 
         // Set up Game
@@ -146,13 +159,12 @@ public class GameMain extends JPanel {
         javax.swing.SwingUtilities.invokeLater(new Runnable() {
             public void run() {
                 JFrame frame = new JFrame(TITLE);
-                // Set the content-pane of the JFrame to an instance of main JPanel
                 frame.setContentPane(new GameMain());
                 frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 frame.pack();
                 frame.setLocationRelativeTo(null); // center the application window
                 frame.setVisible(true);            // show it
             }
- });
-}
+        });
+    }
 }
