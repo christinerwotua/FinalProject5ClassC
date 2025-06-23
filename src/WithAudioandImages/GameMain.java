@@ -114,7 +114,7 @@ public class GameMain extends JPanel {
         statusBar.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 12));
 
         // Tombol Mute/Unmute
-        muteButton = new JToggleButton("Mute");
+        muteButton = new JToggleButton();
         muteButton.setPreferredSize(new Dimension(40, 20));        muteButton.setFocusPainted(false);
         muteButton.setBackground(Color.LIGHT_GRAY);
         muteButton.setFont(new Font("Arial", Font.BOLD, 12));
@@ -145,6 +145,19 @@ public class GameMain extends JPanel {
             }
         });
 
+        // ✅ Tambahkan button Back to Home
+        JButton backButton = new JButton("Back to Home");
+        backButton.setFocusPainted(false);
+        backButton.setFont(new Font("Arial", Font.BOLD, 12));
+        backButton.setBackground(Color.LIGHT_GRAY);
+        backButton.addActionListener(e -> {
+            BackgroundMusic.stop();
+            // Restart aplikasi: Buat ulang GameMain untuk memilih mode lagi
+            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
+            topFrame.setContentPane(new GameMain());
+            topFrame.revalidate();
+        });
+
 
 
         super.setLayout(new BorderLayout());
@@ -156,6 +169,7 @@ public class GameMain extends JPanel {
         mutePanel.setBackground(COLOR_BG_STATUS);
         mutePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
         mutePanel.add(muteButton);
+        mutePanel.add(backButton);
         bottomPanel.add(mutePanel, BorderLayout.EAST);
 
         super.add(bottomPanel, BorderLayout.PAGE_END);
