@@ -19,8 +19,10 @@ public class GameMain extends JPanel {
     public static final Color COLOR_NOUGHT = new Color(64, 154, 225); // Blue #409AE1
     public static final Font FONT_STATUS = new Font("OCR A Extended", Font.PLAIN, 14);
 
-    // Tambahkan deklarasi untuk isBotMode
+    // Tambahkan deklarasi untuk isBotMode dan nama pemain
     private boolean isBotMode = false;
+    private String playerOneName = "Player 1";
+    private String playerTwoName = "Bot";  // Nama default bot
 
     // Define game objects
     private Board board;         // the game board
@@ -39,6 +41,15 @@ public class GameMain extends JPanel {
         int modeChoice = JOptionPane.showOptionDialog(null, "Pilih Mode Permainan:", "Game Mode",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
         isBotMode = (modeChoice == 1); // Jika memilih "Player vs Bot"
+
+        // Jika memilih Player vs Player, masukkan nama pemain
+        if (!isBotMode) {
+            playerOneName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain 1:");
+            playerTwoName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain 2:");
+        } else {
+            // Jika Player vs Bot, hanya nama pemain 1 yang diminta
+            playerOneName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain:");
+        }
 
         super.addMouseListener(new MouseAdapter() {
             @Override
@@ -138,16 +149,16 @@ public class GameMain extends JPanel {
         // Print status-bar message
         if (currentState == State.PLAYING) {
             statusBar.setForeground(Color.BLACK);
-            statusBar.setText((currentPlayer == Seed.CROSS) ? "X's Turn" : "O's Turn");
+            statusBar.setText((currentPlayer == Seed.CROSS) ? playerOneName + "'s Turn" : playerTwoName + "'s Turn");
         } else if (currentState == State.DRAW) {
             statusBar.setForeground(Color.RED);
             statusBar.setText("It's a Draw! Click to play again.");
         } else if (currentState == State.CROSS_WON) {
             statusBar.setForeground(Color.RED);
-            statusBar.setText("'X' Won! Click to play again.");
+            statusBar.setText("'" + playerOneName + "' Won! Click to play again.");
         } else if (currentState == State.NOUGHT_WON) {
             statusBar.setForeground(Color.RED);
-            statusBar.setText("'O' Won! Click to play again.");
+            statusBar.setText("'" + playerTwoName + "' Won! Click to play again.");
         }
     }
 
