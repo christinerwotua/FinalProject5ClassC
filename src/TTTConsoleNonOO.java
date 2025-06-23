@@ -1,20 +1,19 @@
 import java.util.Scanner;
 public class TTTConsoleNonOO {
-    // Define named constants for:
-    //  1. Player: using CROSS and NOUGHT
-    //  2. Cell contents: using CROSS, NOUGHT and NO_SEED
+
+    // Mendeklarasikan kelas utama TTTConsoleNonOO
     public static final int CROSS   = 0;
     public static final int NOUGHT  = 1;
     public static final int NO_SEED = 2;
 
-    // The game board
+    // Ukuran papan 3x3 dan membuat array 2D board untuk merepresentasikan papan permainan.
     public static final int ROWS = 3, COLS = 3;  // number of rows/columns
     public static int[][] board = new int[ROWS][COLS]; // EMPTY, CROSS, NOUGHT
 
-    // The current player
+    // Menyimpan giliran pemain saat ini (CROSS atau NOUGHT).
     public static int currentPlayer;  // CROSS, NOUGHT
 
-    // Define named constants to represent the various states of the game
+    // Giliran pemain saat ini (CROSS atau NOUGHT)
     public static final int PLAYING    = 0;
     public static final int DRAW       = 1;
     public static final int CROSS_WON  = 2;
@@ -22,6 +21,7 @@ public class TTTConsoleNonOO {
     // The current state of the game
     public static int currentState;
 
+    // status game: sedang berlangsung, seri, dimenangkan oleh X, atau dimenangkan oleh O.
     public static Scanner in = new Scanner(System.in); // the input Scanner
 
     /** The entry main method (the program starts here) */
