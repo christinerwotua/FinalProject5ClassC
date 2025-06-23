@@ -3,6 +3,7 @@ package WithAudioandImages;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
+
 /**
  * Tic-Tac-Toe: Two-player Graphic version with better OO design.
  * The Board and Cell classes are separated in their own classes.
@@ -22,7 +23,10 @@ public class GameMain extends JPanel {
     private Board board;         // the game board
     private State currentState;  // the current state of the game
     private Seed currentPlayer;  // the current player
-    private JLabel statusBar;    // for displaying status message
+    private JLabel statusBar;
+    private JLabel timerLabel;
+    private Timer moveTimer;
+    private int timeLeft = 10;
 
     /**
      * Constructor to setup the UI and game components
@@ -42,24 +46,25 @@ public class GameMain extends JPanel {
                 if (currentState == State.PLAYING) {
                     if (row >= 0 && row < Board.ROWS && col >= 0 && col < Board.COLS
                             && board.cells[row][col].content == Seed.NO_SEED) {
-                        // Update cells[][] and return the new game state after the move
                         currentState = board.stepGame(currentPlayer, row, col);
-                        // Switch player
-                        currentPlayer = (currentPlayer == Seed.CROSS) ? Seed.NOUGHT : Seed.CROSS;
+                        if (currentState == State.PLAYING) {
+                            currentPlayer = (currentPlayer == Seed.CROSS) ? Seed.NOUGHT : Seed.CROSS;
+                            SoundEffect.EAT_FOOD.play();
+                            startTimer();
+                        } else {
+                            moveTimer.stop();
+                            if (currentState == State.DRAW) {
+                                SoundEffect.EXPLODE.play();
+                            } else {
+                                SoundEffect.DIE.play();
+                            }
+                        }
+                        repaint();
                     }
-                    // Play appropriate sound clip
-                    if (currentState == State.PLAYING) {
-                        SoundEffect.EAT_FOOD.play();
-                    } else if (currentState == State.DRAW) {
-                        SoundEffect.EXPLODE.play();
-                    } else {
-                        SoundEffect.DIE.play();
-                    }
-                } else {        // game over
-                    newGame();  // restart the game
+                } else {
+                    newGame();
+                    repaint();
                 }
-                // Refresh the drawing canvas
-                repaint();  // Callback paintComponent().
             }
         });
 
@@ -72,11 +77,35 @@ public class GameMain extends JPanel {
         statusBar.setHorizontalAlignment(JLabel.LEFT);
         statusBar.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 12));
 
+        timerLabel = new JLabel("Timer: 10");
+        timerLabel.setFont(FONT_STATUS);
+        timerLabel.setBackground(COLOR_BG_STATUS);
+        timerLabel.setOpaque(true);
+        timerLabel.setPreferredSize(new Dimension(120, 30));
+        timerLabel.setHorizontalAlignment(JLabel.CENTER);
+        timerLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 12));
+
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.add(statusBar, BorderLayout.CENTER);
+        bottomPanel.add(timerLabel, BorderLayout.EAST);
+
+
         super.setLayout(new BorderLayout());
-        super.add(statusBar, BorderLayout.PAGE_END); // same as SOUTH
+        super.add(bottomPanel, BorderLayout.PAGE_END); // same as SOUTH
         super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 30));
         // account for statusBar in height
         super.setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 2, false));
+
+        moveTimer = new Timer(1000, new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                timeLeft--;
+                timerLabel.setText("Timer: " + timeLeft);
+                if (timeLeft <= 0) {
+                    moveTimer.stop();
+                    skipTurn();
+                }
+            }
+        });
 
         // Set up Game
         initGame();
@@ -101,6 +130,22 @@ public class GameMain extends JPanel {
         }
         currentPlayer = Seed.CROSS;    // cross plays first
         currentState = State.PLAYING;  // ready to play
+        startTimer();
+    }
+
+    private void startTimer() {
+        timeLeft = 10;
+        timerLabel.setText("Timer: " + timeLeft);
+        moveTimer.restart();
+    }
+
+    private void skipTurn() {
+        if (currentState == State.PLAYING) {
+            currentPlayer = (currentPlayer == Seed.CROSS) ? Seed.NOUGHT : Seed.CROSS;
+            SoundEffect.EAT_FOOD.play();
+            repaint();
+            startTimer();
+        }
     }
 
     /**
