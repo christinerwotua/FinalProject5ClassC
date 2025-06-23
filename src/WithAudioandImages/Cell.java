@@ -29,24 +29,13 @@ public class Cell {
         content = Seed.NO_SEED;
     }
 
+    /** Paint itself on the graphics canvas, given the Graphics context */
     public void paint(Graphics g) {
+        // Draw the Seed if it is not empty
         int x1 = col * SIZE + PADDING;
         int y1 = row * SIZE + PADDING;
-
-        // Jika ada simbol di dalam sel (X atau O), gambar simbol tersebut
         if (content == Seed.CROSS || content == Seed.NOUGHT) {
-            g.drawImage(content.getImage(), x1, y1, SEED_SIZE, SEED_SIZE, null);  // Gambar X atau O
-        }
-    }
-
-
-    /** Paint itself on the graphics canvas, given the Graphics context */
-//    public void paint(Graphics g) {
-//        // Draw the Seed if it is not empty
-//        int x1 = col * SIZE + PADDING;
-//        int y1 = row * SIZE + PADDING;
-//        if (content == Seed.CROSS || content == Seed.NOUGHT) {
-//            g.drawImage(content.getImage(), x1, y1, SEED_SIZE, SEED_SIZE, null);
-//        }
-//    }
+            g.drawImage(content.getImage(), x1, y1, SEED_SIZE, SEED_SIZE, null);
+ }
+}
 }
