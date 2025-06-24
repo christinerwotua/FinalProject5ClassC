@@ -30,6 +30,12 @@ public class GameMain extends JPanel {
     private Seed currentPlayer;  // the current player
     private JLabel statusBar;    // for displaying status message
 
+    // Variabel untuk timer
+    private Timer turnTimer;
+    private JLabel timerLabel; // Label untuk menampilkan timer
+    private int timeLeft;
+    private final int TURN_TIME = 10; // 10 detik per giliran
+
     /**
      * Constructor to setup the UI and game components
      */
@@ -60,6 +66,36 @@ public class GameMain extends JPanel {
             playerOneName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain:");
         }
 
+        // Inisialisasi timerLabel
+        timerLabel = new JLabel("Time: " + TURN_TIME);
+        timerLabel.setFont(FONT_STATUS);
+        timerLabel.setHorizontalAlignment(JLabel.CENTER);
+        timerLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 12));
+        timerLabel.setOpaque(true);
+        timerLabel.setBackground(COLOR_BG_STATUS);
+
+        // Inisialisasi turnTimer
+        turnTimer = new Timer(1000, new ActionListener() { // Setiap 1 detik
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                timeLeft--;
+                timerLabel.setText("Time: " + timeLeft); // Changed language
+
+                if (timeLeft <= 0) {
+                    turnTimer.stop();
+                    // Lewati giliran
+                    SoundEffect.EXPLODE.play();
+                    switchPlayer();
+
+                    if (isBotMode && currentPlayer == Seed.NOUGHT) { // Jika bot mode dan giliran bot
+                        performBotMove(); // Bot bergerak
+                    }
+                    repaint(); // Perbarui tampilan
+                    startTurnTimer(); // Mulai timer untuk giliran berikutnya
+                }
+            }
+        });
+
         super.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {  // mouse-clicked handler
@@ -72,32 +108,30 @@ public class GameMain extends JPanel {
                 if (currentState == State.PLAYING) {
                     if (row >= 0 && row < Board.ROWS && col >= 0 && col < Board.COLS
                             && board.cells[row][col].content == Seed.NO_SEED) {
+                        turnTimer.stop(); // Hentikan timer saat pemain membuat gerakan
                         // Update cells[][] and return the new game state after the move
                         currentState = board.stepGame(currentPlayer, row, col);
-                        // Switch player
-                        currentPlayer = (currentPlayer == Seed.CROSS) ? Seed.NOUGHT : Seed.CROSS;
 
-                        // Jika mode bot, jalankan langkah bot setelah pemain
-                        if (isBotMode && currentState == State.PLAYING) {
-                            // Mendapatkan langkah bot secara acak
-                            int[] botMove = Bot.getMove(board);
-                            if (botMove != null) {
-                                int botRow = botMove[0];
-                                int botCol = botMove[1];
-                                // Update game state setelah langkah bot
-                                currentState = board.stepGame(currentPlayer, botRow, botCol);
-                                // Ganti giliran pemain setelah langkah bot
-                                currentPlayer = (currentPlayer == Seed.CROSS) ? Seed.NOUGHT : Seed.CROSS;
-                            }
+                        // Play appropriate sound clip
+                        if (currentState == State.PLAYING) {
+                            SoundEffect.EAT_FOOD.play();
+                        } else if (currentState == State.DRAW) {
+                            SoundEffect.EXPLODE.play();
+                        } else {
+                            SoundEffect.DIE.play();
                         }
-                    }
-                    // Play appropriate sound clip
-                    if (currentState == State.PLAYING) {
-                        SoundEffect.EAT_FOOD.play();
-                    } else if (currentState == State.DRAW) {
-                        SoundEffect.EXPLODE.play();
-                    } else {
-                        SoundEffect.DIE.play();
+
+                        if (currentState == State.PLAYING) {
+                            switchPlayer(); // Pindah giliran
+                            if (isBotMode && currentPlayer == Seed.NOUGHT) { // Jika mode bot dan giliran bot
+                                performBotMove(); // Bot bergerak
+                            } else {
+                                startTurnTimer(); // Mulai timer untuk pemain berikutnya
+                            }
+                        } else {
+                            // Game berakhir (menang atau seri), hentikan timer
+                            turnTimer.stop();
+                        }
                     }
                 } else {        // game over
                     newGame();  // restart the game
@@ -173,9 +207,18 @@ public class GameMain extends JPanel {
         mutePanel.add(backButton);
         bottomPanel.add(mutePanel, BorderLayout.EAST);
 
+        JPanel timerWrapperPanel = new JPanel(new BorderLayout());
+        timerWrapperPanel.setBackground(COLOR_BG_STATUS);
+        timerWrapperPanel.add(timerLabel, BorderLayout.CENTER);
+        timerWrapperPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0)); // Padding kiri
+
+
         super.add(bottomPanel, BorderLayout.PAGE_END);
 
-        super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 30));
+
+        super.add(timerWrapperPanel, BorderLayout.PAGE_START);
+
+        super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 30 + 30));
         super.setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 2, false));
 
         // Set up Game
@@ -201,6 +244,56 @@ public class GameMain extends JPanel {
         }
         currentPlayer = Seed.CROSS;    // cross plays first
         currentState = State.PLAYING;  // ready to play
+        startTurnTimer();
+    }
+
+    /**
+     * Metode untuk memulai atau mereset timer giliran.
+     */
+    private void startTurnTimer() { //
+        timeLeft = TURN_TIME; //
+        timerLabel.setText("Time: " + timeLeft); //
+        turnTimer.start(); //
+    }
+
+    /**
+     * Metode untuk mengganti pemain
+     */
+    private void switchPlayer() {
+        currentPlayer = (currentPlayer == Seed.CROSS) ? Seed.NOUGHT : Seed.CROSS;
+    }
+
+    /**
+     * Metode untuk melakukan gerakan bot
+     */
+    private void performBotMove() {
+        int[] botMove = Bot.getMove(board); // Mendapatkan langkah bot secara acak
+        if (botMove != null) {
+            int botRow = botMove[0];
+            int botCol = botMove[1];
+            // Update game state setelah langkah bot
+            currentState = board.stepGame(currentPlayer, botRow, botCol); //
+
+            if (currentState == State.PLAYING) {
+                SoundEffect.EAT_FOOD.play();
+            } else if (currentState == State.DRAW) {
+                SoundEffect.EXPLODE.play();
+            } else {
+                SoundEffect.DIE.play();
+            }
+
+            if (currentState == State.PLAYING) {
+                switchPlayer(); // Ganti giliran pemain setelah langkah bot
+                startTurnTimer(); // Mulai timer untuk pemain berikutnya
+            } else {
+                // Game berakhir (menang atau seri), hentikan timer
+                turnTimer.stop();
+            }
+        } else {
+            // Jika bot tidak bisa bergerak (mungkin papan penuh tapi belum DRAW, kasus jarang)
+            currentState = State.DRAW; // Atau handle sesuai kebutuhan
+            turnTimer.stop();
+        }
     }
 
     /**
