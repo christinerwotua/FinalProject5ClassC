@@ -24,4 +24,16 @@ public class BackgroundMusic {
             clip.stop();
         }
     }
+
+    // ✅ Tambahkan resume untuk melanjutkan musik
+    public static void resume() {
+        if (clip != null && !clip.isRunning()) {
+            clip.start();
+        }
+    }
+
+    // ✅ Tambahkan ini juga jika belum
+    public static boolean isPlaying() {
+        return clip != null && clip.isRunning();
+    }
 }

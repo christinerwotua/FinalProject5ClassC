@@ -38,9 +38,12 @@ public class GameMain extends JPanel {
     private boolean isMuted = false;
 
     public GameMain() {
-        if (!isMuted) {
+        if (!isMuted && !BackgroundMusic.isPlaying()) {
             BackgroundMusic.playLoop("/audio/funk-244706.wav");
         }
+
+
+
 
         // Menambahkan input mode permainan (Player vs Player atau Player vs Bot)
         Object[] options = {"Player vs Player", "Player vs Bot"};
@@ -135,7 +138,7 @@ public class GameMain extends JPanel {
 
                 isMuted = true;
             } else {
-                BackgroundMusic.playLoop("/audio/funk-244706.wav");
+                BackgroundMusic.resume();
 
                 ImageIcon unmuteIcon2 = new ImageIcon(getClass().getResource("/icons/unmute.png"));
                 Image unmuteImg2 = unmuteIcon2.getImage().getScaledInstance(20, 20, Image.SCALE_SMOOTH);
@@ -151,8 +154,6 @@ public class GameMain extends JPanel {
         backButton.setFont(new Font("Arial", Font.BOLD, 12));
         backButton.setBackground(Color.LIGHT_GRAY);
         backButton.addActionListener(e -> {
-            BackgroundMusic.stop();
-            // Restart aplikasi: Buat ulang GameMain untuk memilih mode lagi
             JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
             topFrame.setContentPane(new GameMain());
             topFrame.revalidate();
