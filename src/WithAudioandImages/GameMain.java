@@ -24,11 +24,13 @@ public class GameMain extends JPanel {
     private String playerOneName = "Player 1";
     private String playerTwoName = "Bot";  // Nama default bot
 
+
     // Define game objects
     private Board board;         // the game board
     private State currentState;  // the current state of the game
     private Seed currentPlayer;  // the current player
     private JLabel statusBar;    // for displaying status message
+    private GameCanvas gameCanvas; // Panel khusus untuk menggambar papan
 
     // Variabel untuk timer
     private Timer turnTimer;
@@ -47,8 +49,6 @@ public class GameMain extends JPanel {
         if (!isMuted && !BackgroundMusic.isPlaying()) {
             BackgroundMusic.playLoop("/audio/funk-244706.wav");
         }
-
-
 
 
         // Menambahkan input mode permainan (Player vs Player atau Player vs Bot)
@@ -81,65 +81,26 @@ public class GameMain extends JPanel {
                 timeLeft--;
                 timerLabel.setText("Time: " + timeLeft); // Changed language
 
+                // Di dalam turnTimer ActionListener:
                 if (timeLeft <= 0) {
                     turnTimer.stop();
-                    // Lewati giliran
+                    System.out.println("Time's up! Turn skipped.");
                     SoundEffect.EXPLODE.play();
-                    switchPlayer();
 
-                    if (isBotMode && currentPlayer == Seed.NOUGHT) { // Jika bot mode dan giliran bot
-                        performBotMove(); // Bot bergerak
+                    // BARU: Tambahkan kondisi ini
+                    if (currentState == State.PLAYING) {
+                        switchPlayer();
+
+                        if (isBotMode && currentState == State.PLAYING && currentPlayer == Seed.NOUGHT) {
+                            performBotMove();
+                        }
                     }
-                    repaint(); // Perbarui tampilan
-                    startTurnTimer(); // Mulai timer untuk giliran berikutnya
+                    gameCanvas.repaint();
                 }
             }
         });
 
-        super.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {  // mouse-clicked handler
-                int mouseX = e.getX();
-                int mouseY = e.getY();
-                // Get the row and column clicked
-                int row = mouseY / Cell.SIZE;
-                int col = mouseX / Cell.SIZE;
 
-                if (currentState == State.PLAYING) {
-                    if (row >= 0 && row < Board.ROWS && col >= 0 && col < Board.COLS
-                            && board.cells[row][col].content == Seed.NO_SEED) {
-                        turnTimer.stop(); // Hentikan timer saat pemain membuat gerakan
-                        // Update cells[][] and return the new game state after the move
-                        currentState = board.stepGame(currentPlayer, row, col);
-
-                        // Play appropriate sound clip
-                        if (currentState == State.PLAYING) {
-                            SoundEffect.EAT_FOOD.play();
-                        } else if (currentState == State.DRAW) {
-                            SoundEffect.EXPLODE.play();
-                        } else {
-                            SoundEffect.DIE.play();
-                        }
-
-                        if (currentState == State.PLAYING) {
-                            switchPlayer(); // Pindah giliran
-                            if (isBotMode && currentPlayer == Seed.NOUGHT) { // Jika mode bot dan giliran bot
-                                performBotMove(); // Bot bergerak
-                            } else {
-                                startTurnTimer(); // Mulai timer untuk pemain berikutnya
-                            }
-                        } else {
-                            // Game berakhir (menang atau seri), hentikan timer
-                            turnTimer.stop();
-                        }
-                    }
-                } else {        // game over
-                    newGame();  // restart the game
-                }
-                // Refresh the drawing canvas
-                repaint();  // Callback paintComponent().
-            }
-        });
 
         // Setup the status bar (JLabel) to display status message
         statusBar = new JLabel();
@@ -183,19 +144,31 @@ public class GameMain extends JPanel {
         });
 
         // ✅ Tambahkan button Back to Home
+        // Ganti seluruh blok backButton.addActionListener(...) lama dengan ini:
         JButton backButton = new JButton("Back to Home");
         backButton.setFocusPainted(false);
         backButton.setFont(new Font("Arial", Font.BOLD, 12));
         backButton.setBackground(Color.LIGHT_GRAY);
         backButton.addActionListener(e -> {
             JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            topFrame.setContentPane(new GameMain());
+            // Ganti content pane ke WelcomePanel
+            topFrame.setContentPane(new WelcomePanel(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    // Ketika "CONTINUE" dari WelcomePanel diklik, kembali ke GameMain
+                    topFrame.setContentPane(new GameMain());
+                    topFrame.revalidate();
+                }
+            }));
             topFrame.revalidate();
         });
 
 
 
         super.setLayout(new BorderLayout());
+
+        gameCanvas = new GameCanvas();
+        super.add(gameCanvas, BorderLayout.CENTER);
 // Gabungkan status bar dan tombol mute di panel bawah
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(statusBar, BorderLayout.CENTER);
@@ -207,18 +180,17 @@ public class GameMain extends JPanel {
         mutePanel.add(backButton);
         bottomPanel.add(mutePanel, BorderLayout.EAST);
 
-        JPanel timerWrapperPanel = new JPanel(new BorderLayout());
-        timerWrapperPanel.setBackground(COLOR_BG_STATUS);
-        timerWrapperPanel.add(timerLabel, BorderLayout.CENTER);
-        timerWrapperPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0)); // Padding kiri
+        JPanel topPanel = new JPanel(new BorderLayout()); // Deklarasi topPanel di sini
+        topPanel.setBackground(COLOR_BG_STATUS);
+        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10)); // Padding untuk timer
+        topPanel.add(timerLabel, BorderLayout.CENTER);
 
+        super.add(topPanel, BorderLayout.PAGE_START);
 
         super.add(bottomPanel, BorderLayout.PAGE_END);
 
 
-        super.add(timerWrapperPanel, BorderLayout.PAGE_START);
-
-        super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 30 + 30));
+        super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 80));
         super.setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 2, false));
 
         // Set up Game
@@ -255,6 +227,8 @@ public class GameMain extends JPanel {
         timerLabel.setText("Time: " + timeLeft); //
         turnTimer.start(); //
     }
+
+
 
     /**
      * Metode untuk mengganti pemain
@@ -294,6 +268,8 @@ public class GameMain extends JPanel {
             currentState = State.DRAW; // Atau handle sesuai kebutuhan
             turnTimer.stop();
         }
+        gameCanvas.repaint();
+        GameMain.this.repaint();
     }
 
     /**
@@ -336,5 +312,64 @@ public class GameMain extends JPanel {
                 frame.setVisible(true);            // show it
             }
         });
+    }
+    // Ini adalah kode yang harus Anda tambahkan di akhir file GameMain.java, sebelum kurung kurawal terakhir.
+    class GameCanvas extends JPanel {
+        private static final long serialVersionUID = 1L;
+
+        public GameCanvas() {
+            // Tetapkan ukuran pilihan untuk area papan gambar
+            setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT));
+
+            // Pindahkan MouseListener ke canvas ini
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    int mouseX = e.getX();
+                    int mouseY = e.getY();
+                    int row = mouseY / Cell.SIZE;
+                    int col = mouseX / Cell.SIZE;
+
+                    if (currentState == State.PLAYING) {
+                        if (row >= 0 && row < Board.ROWS && col >= 0 && col < Board.COLS
+                                && board.cells[row][col].content == Seed.NO_SEED) {
+                            turnTimer.stop(); // Hentikan timer saat pemain bergerak
+                            currentState = board.stepGame(currentPlayer, row, col);
+
+                            // Mainkan klip suara yang sesuai
+                            if (currentState == State.PLAYING) {
+                                SoundEffect.EAT_FOOD.play();
+                            } else if (currentState == State.DRAW) {
+                                SoundEffect.EXPLODE.play();
+                            } else {
+                                SoundEffect.DIE.play();
+                            }
+
+                            if (currentState == State.PLAYING) {
+                                switchPlayer(); // Pindah giliran
+                                if (isBotMode && currentState == State.PLAYING && currentPlayer == Seed.NOUGHT) {
+                                    performBotMove(); // Bot bergerak
+                                }
+                            } else {
+                                // Game berakhir (menang atau seri), hentikan timer
+                                turnTimer.stop();
+                            }
+                        }
+                    } else {        // Game berakhir
+                        newGame();  // Mulai ulang game
+                    }
+                    repaint(); // Perbarui tampilan canvas ini saja
+                    GameMain.this.repaint();
+                }
+            });
+        }
+
+        @Override
+        public void paintComponent(Graphics g) {
+            super.paintComponent(g); // memapstikan latar belakang dibersihkan
+            setBackground(COLOR_BG); // Atur warna latar belakangnya
+
+            board.paint(g);
+        }
     }
 }
