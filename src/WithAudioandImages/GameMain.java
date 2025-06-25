@@ -116,15 +116,20 @@ public class GameMain extends JPanel {
                     System.out.println("Time's up! Turn skipped.");
                     SoundEffect.EXPLODE.play();
 
-                    // BARU: Tambahkan kondisi ini
                     if (currentState == State.PLAYING) {
                         switchPlayer();
+                        gameCanvas.repaint(); // Perbarui tampilan setelah pemain diganti
 
                         if (isBotMode && currentState == State.PLAYING && currentPlayer == Seed.NOUGHT) {
-                            performBotMove();
+                            scheduleBotMove(); // <-- Panggil scheduleBotMove
+                        } else {
+                            startTurnTimer(); // Mulai timer untuk pemain berikutnya jika bukan bot
                         }
+                    } else { // Jika game berakhir karena waktu habis (misal, seri)
+                        gameCanvas.repaint();
+                        GameMain.this.repaint();
+                        handleRoundEnd();
                     }
-                    gameCanvas.repaint();
                 }
             }
         });
@@ -301,14 +306,13 @@ public class GameMain extends JPanel {
 
             if (currentState == State.PLAYING) {
                 switchPlayer(); // Ganti giliran pemain setelah langkah bot
-                startTurnTimer(); // Mulai timer untuk pemain berikutnya
             } else {
                 // Game berakhir (menang atau seri), hentikan timer
                 turnTimer.stop();
                 handleRoundEnd();
             }
         } else {
-            // Jika bot tidak bisa bergerak (mungkin papan penuh tapi belum DRAW, kasus jarang)
+            // Jika bot tidak bisa bergerak
             currentState = State.DRAW; // Atau handle sesuai kebutuhan
             turnTimer.stop();
             handleRoundEnd();
@@ -451,21 +455,24 @@ public class GameMain extends JPanel {
 
                             if (currentState == State.PLAYING) {
                                 switchPlayer(); // Pindah giliran
+                                repaint(); // Perbarui tampilan canvas setelah pemain bergerak
+                                GameMain.this.repaint(); // Perbarui GameMain untuk status bar
                                 if (isBotMode && currentState == State.PLAYING && currentPlayer == Seed.NOUGHT) {
-                                    performBotMove(); // Bot bergerak
+                                    scheduleBotMove(); // Bot bergerak
+                                } else {
+                                    startTurnTimer();
                                 }
-                                startTurnTimer();
                             } else {
                                 // Game berakhir (menang atau seri), hentikan timer
                                 turnTimer.stop();
+                                repaint();
+                                GameMain.this.repaint();
                                 handleRoundEnd();
                             }
                         }
                     } else {        // Game berakhir
 
                     }
-                    repaint(); // Perbarui tampilan canvas ini saja
-                    GameMain.this.repaint();
                 }
             });
         }
@@ -478,4 +485,29 @@ public class GameMain extends JPanel {
             board.paint(g);
         }
     }
+
+    private void scheduleBotMove() {
+        // Hentikan timer giliran pemain jika masih berjalan
+        if (turnTimer.isRunning()) {
+            turnTimer.stop();
+        }
+
+        // Tampilkan pesan "Bot berpikir..." atau sejenisnya
+        statusBar.setText("Round " + currentRound + " of " + totalRounds + " | Bot is thinking...");
+        GameMain.this.repaint(); // Pastikan status bar diperbarui
+
+        // Gunakan Swing Timer untuk menunda gerakan bot
+        Timer botDelayTimer = new Timer(700, new ActionListener() { // Jeda 700 milidetik (0.7 detik)
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                ((Timer) e.getSource()).stop(); // Hentikan timer ini setelah sekali jalan
+                performBotMove(); // Panggil metode bot untuk bergerak
+                startTurnTimer(); // Mulai timer untuk giliran berikutnya (jika game masih PLAYING)
+            }
+        });
+        botDelayTimer.setRepeats(false); // Pastikan timer hanya berjalan sekali
+        botDelayTimer.start();
+    }
+
+
 }
