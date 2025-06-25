@@ -37,7 +37,12 @@ public class GameMain extends JPanel {
     private JLabel timerLabel; // Label untuk menampilkan timer
     private int timeLeft;
     private final int TURN_TIME = 10; // 10 detik per giliran
-
+    //Round and Score variables
+    private int totalRounds = 1;
+    private int currentRound = 1;
+    private int playerOneScore = 0;
+    private int playerTwoScore = 0;
+    private JLabel scoreLabel;
     /**
      * Constructor to setup the UI and game components
      */
@@ -50,6 +55,18 @@ public class GameMain extends JPanel {
             BackgroundMusic.playLoop("/audio/funk-244706.wav");
         }
 
+        //Get total rounds from user
+        String roundsInput = JOptionPane.showInputDialog(null, "Enter total number of rounds:", "Number of Rounds", JOptionPane.QUESTION_MESSAGE); //
+        try { //
+            totalRounds = Integer.parseInt(roundsInput); //
+            if (totalRounds <= 0) { //
+                totalRounds = 1; // Default to 1 if invalid input //
+                JOptionPane.showMessageDialog(null, "Invalid number of rounds. Defaulting to 1 round.", "Error", JOptionPane.ERROR_MESSAGE); //
+            }
+        } catch (NumberFormatException e) { //
+            totalRounds = 1; // Default to 1 if input is not a number //
+            JOptionPane.showMessageDialog(null, "Invalid input for rounds. Defaulting to 1 round.", "Error", JOptionPane.ERROR_MESSAGE); //
+        }
 
         // Menambahkan input mode permainan (Player vs Player atau Player vs Bot)
         Object[] options = {"Player vs Player", "Player vs Bot"};
@@ -58,21 +75,33 @@ public class GameMain extends JPanel {
         isBotMode = (modeChoice == 1); // Jika memilih "Player vs Bot"
 
         // Jika memilih Player vs Player, masukkan nama pemain
-        if (!isBotMode) {
-            playerOneName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain 1:");
-            playerTwoName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain 2:");
-        } else {
+        if (!isBotMode) { //
+            playerOneName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain 1:"); //
+            if (playerOneName == null || playerOneName.trim().isEmpty()) playerOneName = "Player 1"; //
+            playerTwoName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain 2:"); //
+            if (playerTwoName == null || playerTwoName.trim().isEmpty()) playerTwoName = "Player 2"; //
+        } else { //
             // Jika Player vs Bot, hanya nama pemain 1 yang diminta
-            playerOneName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain:");
+            playerOneName = JOptionPane.showInputDialog(null, "Masukkan Nama Pemain:"); //
+            if (playerOneName == null || playerOneName.trim().isEmpty()) playerOneName = "Player"; //
+            playerTwoName = "Bot"; //
         }
 
         // Inisialisasi timerLabel
         timerLabel = new JLabel("Time: " + TURN_TIME);
         timerLabel.setFont(FONT_STATUS);
-        timerLabel.setHorizontalAlignment(JLabel.CENTER);
+        timerLabel.setHorizontalAlignment(JLabel.LEFT);
         timerLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 12));
         timerLabel.setOpaque(true);
         timerLabel.setBackground(COLOR_BG_STATUS);
+
+        //Initialize scoreLabel
+        scoreLabel = new JLabel("Score: " + playerOneName + " " + playerOneScore + " - " + playerTwoScore + " " + playerTwoName); //
+        scoreLabel.setFont(FONT_STATUS); //
+        scoreLabel.setHorizontalAlignment(JLabel.CENTER); //
+        scoreLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0)); // Adjusted padding //
+        scoreLabel.setOpaque(true); //
+        scoreLabel.setBackground(COLOR_BG_STATUS); //
 
         // Inisialisasi turnTimer
         turnTimer = new Timer(1000, new ActionListener() { // Setiap 1 detik
@@ -108,7 +137,7 @@ public class GameMain extends JPanel {
         statusBar.setBackground(COLOR_BG_STATUS);
         statusBar.setOpaque(true);
         statusBar.setPreferredSize(new Dimension(300, 30));
-        statusBar.setHorizontalAlignment(JLabel.LEFT);
+        statusBar.setHorizontalAlignment(JLabel.CENTER);
         statusBar.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 12));
 
         // Tombol Mute/Unmute
@@ -144,14 +173,14 @@ public class GameMain extends JPanel {
         });
 
         // ✅ Tambahkan button Back to Home
-        // Ganti seluruh blok backButton.addActionListener(...) lama dengan ini:
         JButton backButton = new JButton("Back to Home");
         backButton.setFocusPainted(false);
         backButton.setFont(new Font("Arial", Font.BOLD, 12));
         backButton.setBackground(Color.LIGHT_GRAY);
         backButton.addActionListener(e -> {
             JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this);
-            // Ganti content pane ke WelcomePanel
+            BackgroundMusic.stop();
+            turnTimer.stop();
             topFrame.setContentPane(new WelcomePanel(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
@@ -169,33 +198,38 @@ public class GameMain extends JPanel {
 
         gameCanvas = new GameCanvas();
         super.add(gameCanvas, BorderLayout.CENTER);
-// Gabungkan status bar dan tombol mute di panel bawah
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.add(statusBar, BorderLayout.CENTER);
 
-        JPanel mutePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        mutePanel.setBackground(COLOR_BG_STATUS);
-        mutePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
-        mutePanel.add(muteButton);
-        mutePanel.add(backButton);
-        bottomPanel.add(mutePanel, BorderLayout.EAST);
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        JPanel statusScorePanel = new JPanel(new GridLayout(2, 1)); // Two rows for status and score //
+        statusScorePanel.add(statusBar);
+        statusScorePanel.add(scoreLabel);
+        bottomPanel.add(statusScorePanel, BorderLayout.CENTER);
+
 
         JPanel topPanel = new JPanel(new BorderLayout()); // Deklarasi topPanel di sini
         topPanel.setBackground(COLOR_BG_STATUS);
         topPanel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10)); // Padding untuk timer
-        topPanel.add(timerLabel, BorderLayout.CENTER);
+        topPanel.add(timerLabel, BorderLayout.WEST);
+
+        JPanel topButtonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT)); //
+        topButtonsPanel.setBackground(COLOR_BG_STATUS); //
+        topButtonsPanel.add(muteButton); //
+        topButtonsPanel.add(backButton); //
+        topPanel.add(topButtonsPanel, BorderLayout.EAST); // Tambahkan panel tombol ke KANAN atas
+
+        super.add(topPanel, BorderLayout.PAGE_START);
 
         super.add(topPanel, BorderLayout.PAGE_START);
 
         super.add(bottomPanel, BorderLayout.PAGE_END);
 
 
-        super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 80));
+        super.setPreferredSize(new Dimension(Board.CANVAS_WIDTH, Board.CANVAS_HEIGHT + 100));
         super.setBorder(BorderFactory.createLineBorder(COLOR_BG_STATUS, 2, false));
 
         // Set up Game
         initGame();
-        newGame();
+        newGame(true);
     }
 
     /**
@@ -208,7 +242,15 @@ public class GameMain extends JPanel {
     /**
      * Reset the game-board contents and the current-state, ready for new game
      */
-    public void newGame() {
+    public void newGame(boolean isNewGame) {
+        if (isNewGame) { //
+            currentRound = 1; //
+            playerOneScore = 0; //
+            playerTwoScore = 0; //
+        } else { //
+            currentRound++; //
+        }
+
         for (int row = 0; row < Board.ROWS; ++row) {
             for (int col = 0; col < Board.COLS; ++col) {
                 board.cells[row][col].content = Seed.NO_SEED; // all cells empty
@@ -217,6 +259,7 @@ public class GameMain extends JPanel {
         currentPlayer = Seed.CROSS;    // cross plays first
         currentState = State.PLAYING;  // ready to play
         startTurnTimer();
+        repaint();
     }
 
     /**
@@ -262,14 +305,71 @@ public class GameMain extends JPanel {
             } else {
                 // Game berakhir (menang atau seri), hentikan timer
                 turnTimer.stop();
+                handleRoundEnd();
             }
         } else {
             // Jika bot tidak bisa bergerak (mungkin papan penuh tapi belum DRAW, kasus jarang)
             currentState = State.DRAW; // Atau handle sesuai kebutuhan
             turnTimer.stop();
+            handleRoundEnd();
         }
         gameCanvas.repaint();
         GameMain.this.repaint();
+    }
+
+    // NEW: Handle end of a round
+    private void handleRoundEnd() { //
+        if (currentState == State.CROSS_WON) { //
+            playerOneScore++; //
+        } else if (currentState == State.NOUGHT_WON) { //
+            playerTwoScore++; //
+        }
+
+        if (currentRound < totalRounds) { //
+            int option = JOptionPane.showConfirmDialog(null, //
+                    "Round " + currentRound + " of " + totalRounds + " completed!\n" + //
+                            playerOneName + " Score: " + playerOneScore + "\n" + //
+                            playerTwoName + " Score: " + playerTwoScore + "\n\n" + //
+                            "Do you want to play next round?", //
+                    "Round End", JOptionPane.YES_NO_OPTION); //
+            if (option == JOptionPane.YES_OPTION) { //
+                newGame(false); // Start a new round //
+            } else { //
+                showFinalResults(); //
+            }
+        } else { //
+            showFinalResults(); //
+        }
+    }
+
+    // NEW: Show final results
+    private void showFinalResults() { //
+        String message; //
+        if (playerOneScore > playerTwoScore) { //
+            message = playerOneName + " wins the game!"; //
+        } else if (playerTwoScore > playerOneScore) { //
+            message = playerTwoName + " wins the game!"; //
+        } else { //
+            message = "The game is a Draw!"; //
+        }
+
+        int option = JOptionPane.showConfirmDialog(null, //
+                "Game Over!\n" + //
+                        playerOneName + " Final Score: " + playerOneScore + "\n" + //
+                        playerTwoName + " Final Score: " + playerTwoScore + "\n\n" + //
+                        message + "\n\n" + //
+                        "Do you want to play again from the start?", //
+                "Game Over", JOptionPane.YES_NO_OPTION); //
+
+        if (option == JOptionPane.YES_OPTION) { //
+            // Restart the whole game by creating a new GameMain instance
+            JFrame topFrame = (JFrame) SwingUtilities.getWindowAncestor(this); //
+            topFrame.setContentPane(new GameMain()); //
+            topFrame.revalidate(); //
+        } else { //
+            // Exit the application
+            System.exit(0); //
+        }
     }
 
     /**
@@ -282,18 +382,22 @@ public class GameMain extends JPanel {
 
         board.paint(g);  // ask the game board to paint itself
         // Print status-bar message
-        if (currentState == State.PLAYING) {
-            statusBar.setForeground(Color.BLACK);
-            statusBar.setText((currentPlayer == Seed.CROSS) ? playerOneName + "'s Turn" : playerTwoName + "'s Turn");
-        } else if (currentState == State.DRAW) {
-            statusBar.setForeground(Color.RED);
-            statusBar.setText("It's a Draw! Click to play again.");
-        } else if (currentState == State.CROSS_WON) {
-            statusBar.setForeground(Color.RED);
-            statusBar.setText("'" + playerOneName + "' Won! Click to play again.");
-        } else if (currentState == State.NOUGHT_WON) {
-            statusBar.setForeground(Color.RED);
-            statusBar.setText("'" + playerTwoName + "' Won! Click to play again.");
+        if (currentState == State.PLAYING) { //
+            statusBar.setForeground(Color.BLACK); //
+            statusBar.setText("Round " + currentRound + " of " + totalRounds + " | " + ((currentPlayer == Seed.CROSS) ? playerOneName : playerTwoName) + "'s Turn"); //
+            scoreLabel.setText("Score: " + playerOneName + " " + playerOneScore + " - " + playerTwoScore + " " + playerTwoName); //
+        } else if (currentState == State.DRAW) { //
+            statusBar.setForeground(Color.RED); //
+            statusBar.setText("It's a Draw!"); //
+            scoreLabel.setText("Score: " + playerOneName + " " + playerOneScore + " - " + playerTwoScore + " " + playerTwoName); //
+        } else if (currentState == State.CROSS_WON) { //
+            statusBar.setForeground(Color.RED); //
+            statusBar.setText("'" + playerOneName + "' Won this round!"); //
+            scoreLabel.setText("Score: " + playerOneName + " " + playerOneScore + " - " + playerTwoScore + " " + playerTwoName); //
+        } else if (currentState == State.NOUGHT_WON) { //
+            statusBar.setForeground(Color.RED); //
+            statusBar.setText("'" + playerTwoName + "' Won this round!"); //
+            scoreLabel.setText("Score: " + playerOneName + " " + playerOneScore + " - " + playerTwoScore + " " + playerTwoName); //
         }
     }
 
@@ -350,13 +454,15 @@ public class GameMain extends JPanel {
                                 if (isBotMode && currentState == State.PLAYING && currentPlayer == Seed.NOUGHT) {
                                     performBotMove(); // Bot bergerak
                                 }
+                                startTurnTimer();
                             } else {
                                 // Game berakhir (menang atau seri), hentikan timer
                                 turnTimer.stop();
+                                handleRoundEnd();
                             }
                         }
                     } else {        // Game berakhir
-                        newGame();  // Mulai ulang game
+
                     }
                     repaint(); // Perbarui tampilan canvas ini saja
                     GameMain.this.repaint();
