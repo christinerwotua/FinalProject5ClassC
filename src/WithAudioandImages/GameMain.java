@@ -55,6 +55,8 @@ public class GameMain extends JPanel {
             BackgroundMusic.playLoop("/audio/funk-244706.wav");
         }
 
+        WelcomeMessage.showWelcomeMessage();
+
         //Get total rounds from user
         String roundsInput = JOptionPane.showInputDialog(null, "Enter total number of rounds:", "Number of Rounds", JOptionPane.QUESTION_MESSAGE); //
         try { //
